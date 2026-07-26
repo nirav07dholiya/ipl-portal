@@ -3,9 +3,9 @@ import React, { useState, useMemo, useEffect } from "react";
 /* ============================================================
    PLAYER DATA — career aggregates spanning IPL 2010–2026.
    Figures are approximate career totals — treat as close
-   estimates, not official records. Added several major names
-   that were missing from the original set (Dhoni, Buttler,
-   Maxwell, de Kock, Pooran, Miller, Williamson, Cummins).
+   estimates, not official records.
+
+   Every player appears in exactly ONE category (deduplicated).
    ============================================================ */
 
 const TEAM_COLORS = {
@@ -94,7 +94,7 @@ const BATSMEN = [
   { name: "Travis Head", team: "SRH", matches: 40, runs: 1400, avg: 35.0, sr: 168.0 },
   { name: "Heinrich Klaasen", team: "SRH", matches: 65, runs: 1900, avg: 39.5, sr: 172.0 },
   { name: "Vaibhav Suryavanshi", team: "RR", matches: 20, runs: 830, avg: 44.0, sr: 190.0 },
-     { name: "Manoj Tiwary", team: "KKR/RCB", matches: 98, runs: 1695, avg: 28.73, sr: 116.98 },
+  { name: "Manoj Tiwary", team: "KKR/RCB", matches: 98, runs: 1695, avg: 28.73, sr: 116.98 }
 ];
 
 const ALL_ROUNDERS = [
@@ -141,7 +141,6 @@ const SPINNERS = [
   { name: "Yuzvendra Chahal", team: "RCB/RR/PBKS", matches: 175, wickets: 220, econ: 7.7, bowlSR: 18.4 },
   { name: "Piyush Chawla", team: "KXIP/CSK/MI/KKR", matches: 192, wickets: 195, econ: 7.6, bowlSR: 20.1 },
   { name: "Amit Mishra", team: "DD/SRH", matches: 160, wickets: 174, econ: 7.4, bowlSR: 18.9 },
-  { name: "Ravichandran Ashwin (Sp)", team: "CSK/KXIP/DC/RR", matches: 215, wickets: 182, econ: 6.9, bowlSR: 21.7 },
   { name: "Harbhajan Singh", team: "MI/CSK", matches: 163, wickets: 150, econ: 6.9, bowlSR: 22.3 },
   { name: "Rashid Khan", team: "SRH/GT", matches: 150, wickets: 200, econ: 6.6, bowlSR: 15.9 },
   { name: "Imran Tahir", team: "PBKS/RR/SRH/CSK", matches: 106, wickets: 130, econ: 7.1, bowlSR: 16.9 },
@@ -224,6 +223,34 @@ function rankOf(catKey, deletedSet) {
   return sorted.map((p, i) => ({ ...p, rank: i + 1 }));
 }
 
+/* Cross-category "Impact Score" — the only fair way to compare a batsman
+   against a spinner against an all-rounder head-to-head. Shown openly in
+   the UI (not hidden) since it's an approximation, not an official stat.
+   - Batting component: (runs per match) scaled by strike rate vs a 130 baseline.
+   - Bowling component: (wickets per match) scaled by economy vs an 8.0 baseline, ×20.
+   - Batsmen use batting only, bowlers use bowling only, all-rounders use both. */
+function impactScore(p) {
+  const matches = p.matches || 1;
+  const hasRuns = typeof p.runs === "number";
+  const hasWickets = typeof p.wickets === "number";
+  let bat = 0, bowl = 0;
+  if (hasRuns) {
+    const sr = p.sr != null ? p.sr : 130;
+    bat = (p.runs / matches) * (sr / 130);
+  }
+  if (hasWickets) {
+    const econ = p.econ != null ? p.econ : 8;
+    bowl = (p.wickets / matches) * (8 / econ) * 20;
+  }
+  if (hasRuns && hasWickets) return bat + bowl;
+  return hasWickets ? bowl : bat;
+}
+
+function displayName(names, i) {
+  const n = names && names[i] ? names[i].trim() : "";
+  return n || `Player ${i + 1}`;
+}
+
 /* ============ AVATAR ============ */
 function Avatar({ name, team, size = 56, ring }) {
   const color = teamColor(team);
@@ -303,18 +330,28 @@ function CatGrid({ active, onPick }) {
 /* ============ GAME FLOW ============
    Each participant drafts a full 11-player lineup, one pick at a
    time, in round-robin order. With N participants, total picks
-   = N × 11 (e.g. 2 participants → 22 picks). Afterwards every
-   participant's XI is shown, with add/remove controls.
+   = N × 11 (e.g. 2 participants → 22 picks).
+
+   A player can only belong to ONE lineup across the WHOLE draft —
+   if the algorithm+number reveal lands on someone already taken by
+   any participant, the pick doesn't go through: the candidate gets
+   another chance to enter a new number instead of a silent swap.
+
+   Once every lineup is complete, a Final Comparison screen matches
+   slot 1 vs slot 1, slot 2 vs slot 2, etc. across all candidates,
+   using a cross-category Impact Score, and declares an overall winner.
 ============================================================ */
 function PlayGame() {
   const [stage, setStage] = useState("count");
   const [numPlayers, setNumPlayers] = useState(null);
   const [algos, setAlgos] = useState([]);
+  const [names, setNames] = useState([]);
   const [lineups, setLineups] = useState([]);
   const [turnIndex, setTurnIndex] = useState(0);
   const [category, setCategory] = useState(null);
   const [pickNum, setPickNum] = useState("");
   const [lastPick, setLastPick] = useState(null);
+  const [collisionMsg, setCollisionMsg] = useState(null);
 
   const deletedBatsman = useDeletedPlayers("batsman");
   const deletedAllrounder = useDeletedPlayers("allrounder");
@@ -334,6 +371,7 @@ function PlayGame() {
   function chooseCount(n) {
     setNumPlayers(n);
     setAlgos(Array(n).fill(""));
+    setNames(Array(n).fill(""));
     setLineups(Array(n).fill(null).map(() => []));
     setStage("algos");
   }
@@ -342,12 +380,22 @@ function PlayGame() {
     next[i] = val;
     setAlgos(next);
   }
+  function updateName(i, val) {
+    const next = [...names];
+    next[i] = val;
+    setNames(next);
+  }
   function startTurns() {
     setTurnIndex(0);
     setCategory(null);
     setPickNum("");
     setLastPick(null);
+    setCollisionMsg(null);
     setStage("turn");
+  }
+  function pickCategory(cat) {
+    setCategory(cat);
+    setCollisionMsg(null);
   }
   function submitTurn() {
     const algoNum = parseInt(algos[currentParticipant], 10) || 0;
@@ -356,14 +404,21 @@ function PlayGame() {
     if (!category || !pn) return;
 
     const ranked = rankOf(category, deletedByCat[category].deletedSet);
-    const ownedNames = new Set(lineups[currentParticipant].map(p => p.name));
-    const available = ranked.filter(p => !ownedNames.has(p.name));
-    if (available.length === 0) return;
+    if (ranked.length === 0) return;
 
-    const idx = ((sum - 1) % available.length + available.length) % available.length;
-    const player = available[idx];
+    const idx = ((sum - 1) % ranked.length + ranked.length) % ranked.length;
+    const player = ranked[idx];
+
+    // Global uniqueness: check EVERY participant's lineup, not just the current one.
+    const allOwnedNames = new Set(lineups.flatMap(arr => arr.map(p => p.name)));
+    if (allOwnedNames.has(player.name)) {
+      setCollisionMsg(`${player.name} is already on a lineup — try a different number to reveal someone new.`);
+      setPickNum("");
+      return; // turn does NOT advance; candidate gets another chance
+    }
+    setCollisionMsg(null);
+
     const entry = { ...player, category };
-
     const nextLineups = lineups.map((arr, i) => (i === currentParticipant ? [...arr, entry] : arr));
     setLineups(nextLineups);
     setLastPick({ participantIdx: currentParticipant, round: currentRound, algo: algoNum, pickNum: pn, sum, category, player });
@@ -377,8 +432,8 @@ function PlayGame() {
     }
   }
   function resetAll() {
-    setStage("count"); setNumPlayers(null); setAlgos([]); setLineups([]);
-    setTurnIndex(0); setCategory(null); setPickNum(""); setLastPick(null);
+    setStage("count"); setNumPlayers(null); setAlgos([]); setNames([]); setLineups([]);
+    setTurnIndex(0); setCategory(null); setPickNum(""); setLastPick(null); setCollisionMsg(null);
   }
   function removeFromLineup(participantIdx, name) {
     setLineups(lineups.map((arr, i) => (i === participantIdx ? arr.filter(p => p.name !== name) : arr)));
@@ -391,6 +446,20 @@ function PlayGame() {
       return [...arr, entry];
     }));
   }
+  function moveInLineup(participantIdx, index, direction) {
+    setLineups(lineups.map((arr, i) => {
+      if (i !== participantIdx) return arr;
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= arr.length) return arr;
+      const newArr = [...arr];
+      [newArr[index], newArr[targetIndex]] = [newArr[targetIndex], newArr[index]];
+      return newArr;
+    }));
+  }
+
+  // All names taken by anyone, across all lineups — used so the Add-player
+  // dropdown in the final screen also respects global uniqueness.
+  const globallyOwnedNames = new Set(lineups.flatMap(arr => arr.map(p => p.name)));
 
   return (
     <>
@@ -401,6 +470,7 @@ function PlayGame() {
           <p className="text-sm text-slate-400 mb-4 leading-relaxed">
             Pick a headcount — from 1 to 6 players. Each of you will draft a full playing XI, one pick per turn,
             taking turns round-robin style. With 2 players that's 22 picks total (11 rounds × 2), with 3 it's 33, and so on.
+            No player can end up on two different lineups — if a reveal lands on someone already taken, you'll get another number to try.
           </p>
           <div className="flex gap-2.5 flex-wrap">
             {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -417,14 +487,16 @@ function PlayGame() {
       {stage === "algos" && (
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
           <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Step 2 of 3</div>
-          <h2 className="text-xl font-extrabold text-white mb-1.5">Set each player's algorithm number</h2>
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">This is your personal number — it gets added to whatever number you pick during each of your 11 turns.</p>
+          <h2 className="text-xl font-extrabold text-white mb-1.5">Name each candidate and set their algorithm number</h2>
+          <p className="text-sm text-slate-400 mb-4 leading-relaxed">The name shows up everywhere instead of "Player 1/2/3". The algorithm number gets added to whatever number you pick during each of your 11 turns.</p>
           {algos.map((a, i) => (
-            <div key={i} className="flex items-center gap-3.5 p-3.5 mb-2.5 bg-slate-900 border border-slate-700 rounded-lg">
+            <div key={i} className="flex items-center gap-3.5 p-3.5 mb-2.5 bg-slate-900 border border-slate-700 rounded-lg flex-wrap sm:flex-nowrap">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-extrabold text-white flex-shrink-0">{i + 1}</div>
-              <label className="text-sm text-slate-400 flex-1">Player {i + 1} algorithm number</label>
+              <input type="text" value={names[i] || ""} onChange={(e) => updateName(i, e.target.value)} placeholder={`Candidate ${i + 1} name`}
+                className="flex-1 min-w-[120px] p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-sm" />
+              <label className="text-xs text-slate-400 flex-shrink-0">Algorithm #</label>
               <input type="number" value={a} min="0" onChange={(e) => updateAlgo(i, e.target.value)} placeholder="e.g. 4"
-                className="w-20 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 font-mono text-base" />
+                className="w-20 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 font-mono text-base flex-shrink-0" />
             </div>
           ))}
           <div className="flex gap-2.5 mt-3">
@@ -442,21 +514,21 @@ function PlayGame() {
               <div className="inline-block font-mono text-xs bg-slate-900 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-full">
                 Round {currentRound} of {ROUNDS} · Pick {turnIndex + 1} of {totalTurns}
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 flex-wrap">
                 {lineups.map((arr, i) => (
                   <div key={i} className={"font-mono text-[11px] px-2 py-1 rounded-full border " +
                     (i === currentParticipant ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-slate-700 text-slate-500")}>
-                    P{i + 1}: {arr.length}/11
+                    {displayName(names, i)}: {arr.length}/11
                   </div>
                 ))}
               </div>
             </div>
-            <h2 className="text-xl font-extrabold text-white mb-1.5">Player {currentParticipant + 1}'s pick</h2>
+            <h2 className="text-xl font-extrabold text-white mb-1.5">{displayName(names, currentParticipant)}'s pick</h2>
             <p className="text-sm text-slate-400 mb-4 leading-relaxed">
               Your algorithm number is <b className="text-yellow-400">{algos[currentParticipant]}</b>. Choose a category, then pick a number — the two get added together to reveal your player.
             </p>
             <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2 mt-1.5">Choose category</div>
-            <CatGrid active={category} onPick={setCategory} />
+            <CatGrid active={category} onPick={pickCategory} />
             <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Pick a number</div>
             <div className="flex items-center gap-3.5 p-3.5 mb-1 bg-slate-900 border border-slate-700 rounded-lg">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center font-extrabold text-white flex-shrink-0">#</div>
@@ -464,6 +536,13 @@ function PlayGame() {
               <input type="number" value={pickNum} min="1" onChange={(e) => setPickNum(e.target.value)} placeholder="e.g. 2"
                 className="w-20 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 font-mono text-base" />
             </div>
+
+            {collisionMsg && (
+              <div className="mt-2.5 mb-1 p-3 rounded-lg border border-orange-700 bg-orange-500/10 text-orange-300 text-sm font-semibold">
+                ⚠ {collisionMsg}
+              </div>
+            )}
+
             <div className="flex gap-2.5 mt-3.5">
               <button onClick={resetAll} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-4 py-2.5 rounded-lg">Restart</button>
               <button disabled={!category || !pickNum} onClick={submitTurn}
@@ -473,9 +552,9 @@ function PlayGame() {
             </div>
           </div>
 
-          {lastPick && <ResultCard r={lastPick} />}
+          {lastPick && <ResultCard r={lastPick} names={names} />}
 
-          <MiniLineups lineups={lineups} currentParticipant={currentParticipant} />
+          <MiniLineups lineups={lineups} currentParticipant={currentParticipant} names={names} />
         </>
       )}
 
@@ -484,28 +563,39 @@ function PlayGame() {
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
             <h2 className="text-xl font-extrabold text-white mb-1.5">Draft complete — final lineups</h2>
             <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-              Every participant's 11-player squad is below. Use ✕ to drop a player and "Add player" to fill the empty slot from anyone else in the database.
+              Every candidate's 11-player squad is below. Use ▲ / ▼ to reorder a player, ✕ to drop them, and "Add player" to fill the empty slot from anyone not already taken.
             </p>
-            <button onClick={resetAll} className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg hover:brightness-105">Draft again</button>
+            <div className="flex gap-2.5 flex-wrap">
+              <button onClick={resetAll} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-5 py-3 rounded-lg">Draft again</button>
+              <button onClick={() => setStage("compare")}
+                className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg hover:brightness-105">Compare &amp; declare winner →</button>
+            </div>
           </div>
           {lineups.map((arr, i) => (
             <LineupPanel
               key={i}
               participantIdx={i}
+              name={displayName(names, i)}
               lineup={arr}
               onRemove={(name) => removeFromLineup(i, name)}
               onAdd={(entry) => addToLineup(i, entry)}
+              onMoveUp={(idx) => moveInLineup(i, idx, -1)}
+              onMoveDown={(idx) => moveInLineup(i, idx, 1)}
               deletedByCat={deletedByCat}
-              allLineups={lineups}
+              globallyOwnedNames={globallyOwnedNames}
             />
           ))}
         </div>
+      )}
+
+      {stage === "compare" && (
+        <FinalComparison lineups={lineups} names={names} onBack={() => setStage("done")} onReset={resetAll} />
       )}
     </>
   );
 }
 
-function MiniLineups({ lineups, currentParticipant }) {
+function MiniLineups({ lineups, currentParticipant, names }) {
   if (lineups.every(arr => arr.length === 0)) return null;
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
@@ -513,7 +603,7 @@ function MiniLineups({ lineups, currentParticipant }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {lineups.map((arr, i) => (
           <div key={i} className={"rounded-lg border p-3 " + (i === currentParticipant ? "border-yellow-400" : "border-slate-700")}>
-            <div className="font-bold text-sm text-slate-100 mb-2">Player {i + 1} <span className="text-slate-500 font-mono text-xs">({arr.length}/11)</span></div>
+            <div className="font-bold text-sm text-slate-100 mb-2">{displayName(names, i)} <span className="text-slate-500 font-mono text-xs">({arr.length}/11)</span></div>
             {arr.length === 0 ? (
               <div className="text-xs text-slate-500">No picks yet.</div>
             ) : (
@@ -533,12 +623,12 @@ function MiniLineups({ lineups, currentParticipant }) {
   );
 }
 
-function ResultCard({ r }) {
+function ResultCard({ r, names }) {
   const p = r.player;
   const meta = CATEGORY_META[r.category];
   return (
     <div className="rounded-2xl border-2 border-green-900 bg-gradient-to-b from-green-950 to-black p-5 text-center mb-4 relative overflow-hidden">
-      <div className="font-mono text-xs tracking-widest uppercase text-green-400 relative z-10">Player {r.participantIdx + 1} · Round {r.round} · {meta.label} pick</div>
+      <div className="font-mono text-xs tracking-widest uppercase text-green-400 relative z-10">{displayName(names, r.participantIdx)} · Round {r.round} · {meta.label} pick</div>
       <div className="font-mono text-xs text-green-400/80 my-2 relative z-10">algorithm {r.algo} + number {r.pickNum} = {r.sum} → rank #{p.rank}</div>
       <div className="flex justify-center mb-2 relative z-10"><Avatar name={p.name} team={p.team} size={72} /></div>
       <div className="font-black text-3xl text-green-300 relative z-10" style={{ textShadow: "0 0 14px rgba(110,231,138,0.55)" }}>#{p.rank}</div>
@@ -562,18 +652,19 @@ function StatPill({ v, k }) {
   );
 }
 
-/* ============ FINAL LINEUP PANEL (with add/remove) ============ */
-function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, allLineups }) {
+/* ============ FINAL LINEUP PANEL (with add/remove/reorder) ============ */
+function LineupPanel({ participantIdx, name, lineup, onRemove, onAdd, onMoveUp, onMoveDown, deletedByCat, globallyOwnedNames }) {
   const [addingOpen, setAddingOpen] = useState(false);
   const [addCat, setAddCat] = useState("batsman");
   const [addName, setAddName] = useState("");
 
-  const ownedNames = new Set(lineup.map(p => p.name));
+  // Candidates for "Add player" must respect GLOBAL uniqueness (not owned by
+  // this or any other participant), matching the draft's own rule.
   const candidates = useMemo(() => {
     const ranked = rankOf(addCat, deletedByCat[addCat].deletedSet);
-    return ranked.filter(p => !ownedNames.has(p.name));
+    return ranked.filter(p => !globallyOwnedNames.has(p.name));
     // eslint-disable-next-line
-  }, [addCat, lineup, deletedByCat]);
+  }, [addCat, deletedByCat, globallyOwnedNames]);
 
   useEffect(() => {
     if (candidates.length > 0 && !candidates.find(p => p.name === addName)) {
@@ -594,7 +685,7 @@ function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, al
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
       <div className="flex items-center justify-between mb-3.5">
-        <h3 className="text-lg font-extrabold text-white">Player {participantIdx + 1}'s XI</h3>
+        <h3 className="text-lg font-extrabold text-white">{name}'s XI</h3>
         <div className={"font-mono text-xs px-2.5 py-1 rounded-full border " + (full ? "border-green-600 text-green-400" : "border-yellow-600 text-yellow-400")}>
           {lineup.length}/11
         </div>
@@ -612,8 +703,14 @@ function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, al
                 <div className="font-bold text-sm text-slate-100 truncate">{p.name}</div>
                 <div className="text-[11px] text-slate-400 truncate">{p.team} · {CATEGORY_META[p.category].label}</div>
               </div>
-              <button onClick={() => onRemove(p.name)} title="Remove from lineup"
-                className="text-slate-500 hover:text-red-400 text-sm font-bold w-7 h-7 rounded hover:bg-red-400/10 flex-shrink-0">✕</button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => onMoveUp(idx)} disabled={idx === 0} title="Move up"
+                  className="text-slate-500 hover:text-yellow-400 disabled:opacity-25 disabled:cursor-not-allowed text-xs font-bold w-6 h-6 rounded hover:bg-yellow-400/10">▲</button>
+                <button onClick={() => onMoveDown(idx)} disabled={idx === lineup.length - 1} title="Move down"
+                  className="text-slate-500 hover:text-yellow-400 disabled:opacity-25 disabled:cursor-not-allowed text-xs font-bold w-6 h-6 rounded hover:bg-yellow-400/10">▼</button>
+                <button onClick={() => onRemove(p.name)} title="Remove from lineup"
+                  className="text-slate-500 hover:text-red-400 text-sm font-bold w-7 h-7 rounded hover:bg-red-400/10">✕</button>
+              </div>
             </div>
           ))}
         </div>
@@ -633,6 +730,9 @@ function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, al
                 {candidates.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
               </select>
             </div>
+            {candidates.length === 0 && (
+              <div className="text-xs text-orange-300 mb-2.5">No one left in this category — everyone's already on a lineup. Try a different category.</div>
+            )}
             <div className="flex gap-2">
               <button onClick={() => setAddingOpen(false)} className="border border-slate-700 text-slate-400 hover:text-slate-100 font-semibold text-xs px-3.5 py-2 rounded-lg">Cancel</button>
               <button disabled={candidates.length === 0} onClick={confirmAdd}
@@ -646,6 +746,115 @@ function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, al
           </button>
         )
       )}
+    </div>
+  );
+}
+
+/* ============ FINAL COMPARISON (slot-by-slot, cross-category Impact Score) ============ */
+function FinalComparison({ lineups, names, onBack, onReset }) {
+  const numPlayers = lineups.length;
+  const maxSlots = Math.max(0, ...lineups.map(arr => arr.length));
+
+  const slotRows = useMemo(() => {
+    const rows = [];
+    for (let idx = 0; idx < maxSlots; idx++) {
+      const entries = lineups.map((arr, pIdx) => {
+        const player = arr[idx];
+        if (!player) return null;
+        return { participantIdx: pIdx, player, score: impactScore(player) };
+      });
+      const present = entries.filter(Boolean);
+      let winners = [];
+      if (present.length > 0) {
+        const maxScore = Math.max(...present.map(e => e.score));
+        winners = present.filter(e => Math.abs(e.score - maxScore) < 0.0001).map(e => e.participantIdx);
+      }
+      rows.push({ slot: idx + 1, entries, winners: winners.length === present.length ? [] : winners });
+    }
+    return rows;
+    // eslint-disable-next-line
+  }, [lineups, maxSlots]);
+
+  const tally = useMemo(() => {
+    const t = Array(numPlayers).fill(0);
+    slotRows.forEach(row => { row.winners.forEach(pIdx => { t[pIdx] += 1; }); });
+    return t;
+    // eslint-disable-next-line
+  }, [slotRows, numPlayers]);
+
+  const maxTally = Math.max(...tally, 0);
+  const overallWinners = tally.map((v, i) => ({ i, v })).filter(x => x.v === maxTally && maxTally > 0).map(x => x.i);
+  const isOverallTie = overallWinners.length !== 1;
+
+  return (
+    <div className="mb-5">
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+        <h2 className="text-xl font-extrabold text-white mb-1.5">Final comparison</h2>
+        <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+          Slot 1 vs slot 1, slot 2 vs slot 2, and so on — each row picks a winner using a cross-category <b className="text-yellow-400">Impact Score</b>
+          {" "}(runs-per-match weighted by strike rate for batting, wickets-per-match weighted by economy for bowling; all-rounders combine both).
+          Highlighted card = slot winner. Ties don't award a point to anyone.
+        </p>
+        <div className="flex gap-2.5 flex-wrap">
+          <button onClick={onBack} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-4 py-2.5 rounded-lg">← Back to lineups</button>
+          <button onClick={onReset} className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg hover:brightness-105">Draft again</button>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-b from-yellow-400/10 to-transparent border-2 border-yellow-400 rounded-2xl p-6 mb-5 text-center">
+        <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Overall result</div>
+        {isOverallTie ? (
+          <div className="font-black text-2xl text-white">
+            {maxTally === 0 ? "No slot winners yet" : `Tied at ${maxTally} slot${maxTally === 1 ? "" : "s"} each`}
+          </div>
+        ) : (
+          <div className="font-black text-3xl text-yellow-300" style={{ textShadow: "0 0 14px rgba(250,204,21,0.5)" }}>
+            🏆 {displayName(names, overallWinners[0])} wins!
+          </div>
+        )}
+        <div className="flex justify-center gap-2 flex-wrap mt-3.5">
+          {tally.map((v, i) => (
+            <div key={i} className={"font-mono text-xs px-3 py-1.5 rounded-full border " +
+              (!isOverallTie && i === overallWinners[0] ? "border-yellow-400 text-yellow-300 bg-yellow-400/10 font-bold" : "border-slate-700 text-slate-400")}>
+              {displayName(names, i)}: {v} slot{v === 1 ? "" : "s"}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {slotRows.map(row => (
+          <div key={row.slot} className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
+            <div className="font-mono text-[11px] tracking-widest uppercase text-slate-500 mb-2.5">Slot {row.slot}</div>
+            <div className={`grid gap-2.5`} style={{ gridTemplateColumns: `repeat(${numPlayers}, minmax(0, 1fr))` }}>
+              {row.entries.map((entry, pIdx) => {
+                const isWinner = row.winners.includes(pIdx);
+                if (!entry) {
+                  return (
+                    <div key={pIdx} className="rounded-lg border border-dashed border-slate-700 p-3 text-center text-xs text-slate-600">
+                      No pick
+                    </div>
+                  );
+                }
+                const p = entry.player;
+                return (
+                  <div key={pIdx} className={"rounded-lg border p-3 flex flex-col items-center text-center transition-colors " +
+                    (isWinner ? "border-yellow-400 bg-yellow-400/10" : "border-slate-700 bg-slate-900")}>
+                    <div className="text-[10px] font-mono uppercase tracking-wide text-slate-500 mb-1.5">{displayName(names, pIdx)}</div>
+                    <Avatar name={p.name} team={p.team} size={44} ring={isWinner ? "#facc15" : CAT_ACCENT[p.category]} />
+                    <div className="font-bold text-sm text-slate-100 mt-1.5 truncate max-w-full">{p.name}</div>
+                    <div className="text-[10px] text-slate-400">{CATEGORY_META[p.category].label}</div>
+                    <div className={"font-mono text-xs mt-1.5 px-2 py-0.5 rounded-full " + (isWinner ? "bg-yellow-400 text-slate-950 font-bold" : "text-slate-400")}>
+                      {entry.score.toFixed(1)} pts
+                    </div>
+                    {isWinner && <div className="text-[10px] font-mono uppercase tracking-widest text-yellow-400 font-bold mt-1">Winner</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -851,8 +1060,8 @@ export default function App() {
           <p className="relative z-10 font-mono text-[11px] tracking-widest uppercase text-green-50/85 mb-2.5">Under the lights · Career stats 2010–2026</p>
           <h1 className="relative z-10 font-black text-4xl sm:text-5xl leading-none text-white mb-3" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.25)" }}>Number 11</h1>
           <p className="relative z-10 max-w-md text-white/90 text-[15px] leading-relaxed">
-            Pick your algorithm, call a category, and the scoreboard reveals your player. Draft your full XI — 11 picks each —
-            then fine-tune the final lineup with add and remove controls.
+            Name yourself, pick your algorithm, call a category, and the scoreboard reveals your player. Draft your full XI —
+            then let the Final Comparison crown a winner, slot by slot.
           </p>
           <div className="flex justify-end mt-4 relative z-10 font-sans text-[17px] text-slate-200/80 tracking-widest uppercase font-semibold">
             <p>Created By: NIRAV DHOLIYA</p>
@@ -874,14 +1083,15 @@ export default function App() {
         {tab === "compare" && <CompareTool />}
 
         <div className="text-center text-slate-400 text-[11px] mt-6 leading-relaxed">
-          {BATSMEN.length} batsmen · {ALL_ROUNDERS.length} all-rounders · {SPINNERS.length} spinners · {FAST_BOWLERS.length} fast bowlers — every real player here has roughly 20+ IPL matches somewhere across 2010–2026.
-          Spinner and fast-bowler pools are naturally smaller than batsmen, so those categories fall short of 100 rather than being padded with invented names.
+          {BATSMEN.length} batsmen · {ALL_ROUNDERS.length} all-rounders · {SPINNERS.length} spinners · {FAST_BOWLERS.length} fast bowlers — every player appears in exactly one category, with roughly 20+ IPL matches somewhere across 2010–2026.
           <br />
-          Each participant drafts a full 11-player lineup, one turn at a time, round-robin — not just a single reveal.
+          No player can land on two different lineups in the same draft — a reveal that collides with someone already taken gives that candidate another number to try.
+          <br />
+          Once a draft is done, use ▲ / ▼ to reorder, ✕ to drop, and "Add player" for a replacement — then hit "Compare &amp; declare winner" for a slot-by-slot Impact Score showdown.
           <br />
           Player cards use team-colored jersey avatars with initials, not photos — real player images aren't something I can pull in here.
           <br />
-          Removed players (Player Lists tab) stay hidden across sessions; use "Restore removed" to bring them back. Final lineups can be edited with add/remove controls, but those edits reset if you start a new draft.
+          Removed players (Player Lists tab) stay hidden across sessions; use "Restore removed" to bring them back. Final lineup edits and comparisons reset if you start a new draft.
           Stats are approximate career aggregates spanning many seasons — check iplt20.com/stats or espncricinfo.com for exact current numbers.
         </div>
       </div>
