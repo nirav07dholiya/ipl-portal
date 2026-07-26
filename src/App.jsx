@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from "react";
 
 /* ============================================================
    PLAYER DATA — career aggregates spanning IPL 2010–2026.
-   Base list (2010–2022) supplied by user reference (ESPNcricinfo /
-   IPLT20.com). Extended here with 2023–2026 regulars using the
-   same 20+ matches threshold. Figures are approximate career
-   totals — treat as close estimates, not official records.
+   Figures are approximate career totals — treat as close
+   estimates, not official records. Added several major names
+   that were missing from the original set (Dhoni, Buttler,
+   Maxwell, de Kock, Pooran, Miller, Williamson, Cummins).
    ============================================================ */
 
 const TEAM_COLORS = {
@@ -22,7 +22,20 @@ function initials(name) {
   return name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 3).toUpperCase();
 }
 
+const CAT_ACCENT = {
+  batsman: "#facc15",
+  allrounder: "#38bdf8",
+  spinner: "#c084fc",
+  fastbowler: "#f87171"
+};
+
 const BATSMEN = [
+  { name: "MS Dhoni", team: "CSK", matches: 264, runs: 5320, avg: 39.2, sr: 135.9 },
+  { name: "Jos Buttler", team: "RR/GT", matches: 112, runs: 3720, avg: 39.4, sr: 151.2 },
+  { name: "Quinton de Kock", team: "DC/MI/LSG", matches: 120, runs: 3400, avg: 32.4, sr: 135.8 },
+  { name: "Nicholas Pooran", team: "KXIP/LSG", matches: 92, runs: 2350, avg: 28.3, sr: 156.0 },
+  { name: "David Miller", team: "KXIP/RR/GT/LSG", matches: 132, runs: 2750, avg: 34.1, sr: 139.4 },
+  { name: "Kane Williamson", team: "SRH/GT", matches: 86, runs: 2430, avg: 34.7, sr: 124.8 },
   { name: "Virat Kohli", team: "RCB", matches: 260, runs: 8500, avg: 37.4, sr: 132.0 },
   { name: "Shikhar Dhawan", team: "PBKS/DC/SRH", matches: 222, runs: 6769, avg: 35.2, sr: 127.1 },
   { name: "Rohit Sharma", team: "MI", matches: 260, runs: 6900, avg: 29.9, sr: 130.5 },
@@ -86,6 +99,7 @@ const BATSMEN = [
 ];
 
 const ALL_ROUNDERS = [
+  { name: "Glenn Maxwell", team: "DD/KXIP/RCB", matches: 150, runs: 2700, wickets: 28, econ: 8.9 },
   { name: "Ravindra Jadeja", team: "CSK", matches: 260, runs: 2900, wickets: 168, econ: 7.6 },
   { name: "Hardik Pandya", team: "MI/GT", matches: 160, runs: 2900, wickets: 85, econ: 8.9 },
   { name: "Andre Russell", team: "KKR", matches: 130, runs: 2450, wickets: 130, econ: 9.3 },
@@ -103,7 +117,7 @@ const ALL_ROUNDERS = [
   { name: "James Faulkner", team: "PWI/RR/RCB", matches: 60, runs: 883, wickets: 54, econ: 8.1 },
   { name: "Vinay Kumar", team: "RCB/KKR", matches: 104, runs: 300, wickets: 90, econ: 8.1 },
   { name: "Yuvraj Singh", team: "KXIP/PWI/RCB/DD/SRH", matches: 132, runs: 2750, wickets: 36, econ: 8.5 },
-  { name: "Suresh Raina", team: "CSK/GL", matches: 205, runs: 5528, wickets: 13, econ: 8.7 },
+  { name: "Suresh Raina (AR)", team: "CSK/GL", matches: 205, runs: 5528, wickets: 13, econ: 8.7 },
   { name: "Sunil Narine", team: "KKR", matches: 195, runs: 2100, wickets: 195, econ: 6.7 },
   { name: "Moeen Ali", team: "RCB/CSK", matches: 84, runs: 1500, wickets: 41, econ: 7.6 },
   { name: "Shakib Al Hasan", team: "KKR/SRH", matches: 71, runs: 900, wickets: 62, econ: 7.3 },
@@ -117,7 +131,7 @@ const ALL_ROUNDERS = [
   { name: "Daniel Christian", team: "DD/RCB/PBKS/SRH", matches: 76, runs: 900, wickets: 45, econ: 8.6 },
   { name: "Manoj Tiwary", team: "KKR/RCB", matches: 121, runs: 2400, wickets: 3, econ: 9.0 },
   { name: "Riyan Parag", team: "RR", matches: 95, runs: 1700, wickets: 12, econ: 8.9 },
-  { name: "Venkatesh Iyer", team: "KKR", matches: 60, runs: 1600, wickets: 9, econ: 9.6 },
+  { name: "Venkatesh Iyer (AR)", team: "KKR", matches: 60, runs: 1600, wickets: 9, econ: 9.6 },
   { name: "Wanindu Hasaranga", team: "RCB/SRH", matches: 55, runs: 300, wickets: 72, econ: 7.6 },
   { name: "Ravi Bishnoi", team: "LSG", matches: 95, runs: 55, wickets: 118, econ: 7.4 },
   { name: "Marco Jansen", team: "SRH/MI", matches: 40, runs: 320, wickets: 40, econ: 9.2 },
@@ -126,7 +140,7 @@ const ALL_ROUNDERS = [
   { name: "Sam Curran", team: "PBKS/CSK", matches: 65, runs: 780, wickets: 60, econ: 8.9 },
   { name: "Romario Shepherd", team: "MI/LSG", matches: 35, runs: 320, wickets: 28, econ: 10.0 },
   { name: "Shardul Thakur", team: "RPS/CSK/DC/KKR", matches: 110, runs: 680, wickets: 92, econ: 9.2 },
-  { name: "Nitish Rana", team: "KKR/RR", matches: 145, runs: 3200, wickets: 3, econ: 9.5 },
+  { name: "Nitish Rana (AR)", team: "KKR/RR", matches: 145, runs: 3200, wickets: 3, econ: 9.5 },
   { name: "Rachin Ravindra", team: "CSK", matches: 20, runs: 250, wickets: 10, econ: 7.9 }
 ];
 
@@ -134,35 +148,36 @@ const SPINNERS = [
   { name: "Yuzvendra Chahal", team: "RCB/RR/PBKS", matches: 175, wickets: 220, econ: 7.7, bowlSR: 18.4 },
   { name: "Piyush Chawla", team: "KXIP/CSK/MI/KKR", matches: 192, wickets: 195, econ: 7.6, bowlSR: 20.1 },
   { name: "Amit Mishra", team: "DD/SRH", matches: 160, wickets: 174, econ: 7.4, bowlSR: 18.9 },
-  { name: "Ravichandran Ashwin", team: "CSK/KXIP/DC/RR", matches: 215, wickets: 182, econ: 6.9, bowlSR: 21.7 },
+  { name: "Ravichandran Ashwin (Sp)", team: "CSK/KXIP/DC/RR", matches: 215, wickets: 182, econ: 6.9, bowlSR: 21.7 },
   { name: "Harbhajan Singh", team: "MI/CSK", matches: 163, wickets: 150, econ: 6.9, bowlSR: 22.3 },
-  { name: "Sunil Narine", team: "KKR", matches: 195, wickets: 195, econ: 6.7, bowlSR: 19.3 },
+  { name: "Sunil Narine (Sp)", team: "KKR", matches: 195, wickets: 195, econ: 6.7, bowlSR: 19.3 },
   { name: "Rashid Khan", team: "SRH/GT", matches: 150, wickets: 200, econ: 6.6, bowlSR: 15.9 },
   { name: "Imran Tahir", team: "PBKS/RR/SRH/CSK", matches: 106, wickets: 130, econ: 7.1, bowlSR: 16.9 },
   { name: "Pragyan Ojha", team: "DC/MI", matches: 114, wickets: 113, econ: 6.9, bowlSR: 21.7 },
   { name: "Anil Kumble", team: "RCB", matches: 43, wickets: 45, econ: 6.5, bowlSR: 19.0 },
-  { name: "Shakib Al Hasan", team: "KKR/SRH", matches: 71, wickets: 62, econ: 7.3, bowlSR: 21.0 },
-  { name: "Axar Patel", team: "PBKS/DC", matches: 195, wickets: 150, econ: 7.1, bowlSR: 22.0 },
-  { name: "Ravindra Jadeja", team: "CSK", matches: 260, wickets: 168, econ: 7.6, bowlSR: 23.0 },
-  { name: "Krunal Pandya", team: "MI/LSG", matches: 150, wickets: 72, econ: 7.4, bowlSR: 25.0 },
+  { name: "Shakib Al Hasan (Sp)", team: "KKR/SRH", matches: 71, wickets: 62, econ: 7.3, bowlSR: 21.0 },
+  { name: "Axar Patel (Sp)", team: "PBKS/DC", matches: 195, wickets: 150, econ: 7.1, bowlSR: 22.0 },
+  { name: "Ravindra Jadeja (Sp)", team: "CSK", matches: 260, wickets: 168, econ: 7.6, bowlSR: 23.0 },
+  { name: "Krunal Pandya (Sp)", team: "MI/LSG", matches: 150, wickets: 72, econ: 7.4, bowlSR: 25.0 },
   { name: "Karn Sharma", team: "MI/SRH/CSK", matches: 89, wickets: 76, econ: 8.0, bowlSR: 22.0 },
   { name: "Ish Sodhi", team: "RR/PBKS", matches: 33, wickets: 28, econ: 8.4, bowlSR: 20.0 },
-  { name: "Washington Sundar", team: "RCB/SRH", matches: 100, wickets: 70, econ: 7.0, bowlSR: 24.0 },
+  { name: "Washington Sundar (Sp)", team: "RCB/SRH", matches: 100, wickets: 70, econ: 7.0, bowlSR: 24.0 },
   { name: "Shreyas Gopal", team: "RR", matches: 61, wickets: 50, econ: 7.9, bowlSR: 22.0 },
   { name: "Varun Chakravarthy", team: "KKR", matches: 100, wickets: 115, econ: 7.4, bowlSR: 18.5 },
-  { name: "Yuvraj Singh", team: "KXIP/PWI/RCB/DD/SRH", matches: 132, wickets: 36, econ: 8.0, bowlSR: 26.0 },
+  { name: "Yuvraj Singh (Sp)", team: "KXIP/PWI/RCB/DD/SRH", matches: 132, wickets: 36, econ: 8.0, bowlSR: 26.0 },
   { name: "Maheesh Theekshana", team: "CSK", matches: 55, wickets: 58, econ: 7.4, bowlSR: 22.0 },
   { name: "Kuldeep Yadav", team: "KKR/DC", matches: 105, wickets: 125, econ: 7.9, bowlSR: 18.5 },
   { name: "Rahul Chahar", team: "MI/PBKS", matches: 70, wickets: 65, econ: 8.0, bowlSR: 24.0 },
   { name: "Adam Zampa", team: "RPS/PBKS", matches: 24, wickets: 22, econ: 8.2, bowlSR: 27.0 },
   { name: "Mujeeb Ur Rahman", team: "SRH/KXIP", matches: 40, wickets: 39, econ: 7.2, bowlSR: 23.0 },
   { name: "Noor Ahmad", team: "GT/CSK", matches: 45, wickets: 55, econ: 7.9, bowlSR: 18.0 },
-  { name: "Ravi Bishnoi", team: "LSG", matches: 95, wickets: 118, econ: 7.4, bowlSR: 20.0 }
+  { name: "Ravi Bishnoi (Sp)", team: "LSG", matches: 95, wickets: 118, econ: 7.4, bowlSR: 20.0 }
 ];
 
 const FAST_BOWLERS = [
+  { name: "Pat Cummins", team: "KKR/SRH/PBKS", matches: 62, wickets: 66, econ: 8.6, bowlSR: 19.2 },
   { name: "Bhuvneshwar Kumar", team: "SRH/RCB", matches: 200, wickets: 210, econ: 7.5, bowlSR: 20.5 },
-  { name: "Dwayne Bravo", team: "CSK", matches: 161, wickets: 183, econ: 8.4, bowlSR: 16.9 },
+  { name: "Dwayne Bravo (FB)", team: "CSK", matches: 161, wickets: 183, econ: 8.4, bowlSR: 16.9 },
   { name: "Lasith Malinga", team: "MI", matches: 122, wickets: 170, econ: 7.1, bowlSR: 18.4 },
   { name: "Umesh Yadav", team: "DD/KKR/RCB/GT", matches: 155, wickets: 160, econ: 8.4, bowlSR: 18.9 },
   { name: "Jasprit Bumrah", team: "MI", matches: 150, wickets: 190, econ: 7.2, bowlSR: 19.0 },
@@ -180,7 +195,7 @@ const FAST_BOWLERS = [
   { name: "Deepak Chahar", team: "CSK", matches: 90, wickets: 78, econ: 7.6, bowlSR: 20.0 },
   { name: "Mohammed Shami", team: "KKR/PBKS/DC/GT", matches: 128, wickets: 155, econ: 8.6, bowlSR: 17.8 },
   { name: "Jaydev Unadkat", team: "KKR/RR/SRH", matches: 103, wickets: 92, econ: 8.7, bowlSR: 20.0 },
-  { name: "Shardul Thakur", team: "RPS/CSK/DC/KKR", matches: 110, wickets: 92, econ: 9.2, bowlSR: 18.9 },
+  { name: "Shardul Thakur (FB)", team: "RPS/CSK/DC/KKR", matches: 110, wickets: 92, econ: 9.2, bowlSR: 18.9 },
   { name: "Ashok Dinda", team: "PWI/PBKS", matches: 78, wickets: 79, econ: 8.2, bowlSR: 19.5 },
   { name: "Munaf Patel", team: "MI/RR", matches: 61, wickets: 57, econ: 7.1, bowlSR: 23.0 },
   { name: "Kagiso Rabada", team: "DD/PBKS/GT", matches: 95, wickets: 125, econ: 8.3, bowlSR: 16.5 },
@@ -193,7 +208,7 @@ const FAST_BOWLERS = [
   { name: "Prasidh Krishna", team: "RR/GT", matches: 68, wickets: 70, econ: 8.9, bowlSR: 19.0 },
   { name: "Khaleel Ahmed", team: "SRH/DC/LSG/CSK", matches: 70, wickets: 70, econ: 8.6, bowlSR: 20.0 },
   { name: "Arshdeep Singh", team: "PBKS", matches: 100, wickets: 115, econ: 8.6, bowlSR: 18.0 },
-  { name: "Sam Curran", team: "PBKS/CSK", matches: 65, wickets: 60, econ: 8.9, bowlSR: 17.0 },
+  { name: "Sam Curran (FB)", team: "PBKS/CSK", matches: 65, wickets: 60, econ: 8.9, bowlSR: 17.0 },
   { name: "Mohammed Siraj", team: "SRH/RCB/GT", matches: 130, wickets: 135, econ: 8.9, bowlSR: 18.8 },
   { name: "Gerald Coetzee", team: "MI", matches: 20, wickets: 25, econ: 8.6, bowlSR: 18.5 },
   { name: "Jofra Archer", team: "RR", matches: 45, wickets: 55, econ: 7.4, bowlSR: 19.5 },
@@ -209,6 +224,8 @@ const CATEGORY_META = {
   spinner:    { label: "Spinner",     data: SPINNERS,     primary: "wickets" },
   fastbowler: { label: "Fast Bowler", data: FAST_BOWLERS, primary: "wickets" }
 };
+const CATEGORY_KEYS = Object.keys(CATEGORY_META);
+const ROUNDS = 11; // one full playing XI per participant
 
 function rankOf(catKey, deletedSet) {
   const { data, primary } = CATEGORY_META[catKey];
@@ -225,12 +242,15 @@ function rankOf(catKey, deletedSet) {
 }
 
 /* ============ AVATAR ============ */
-function Avatar({ name, team, size = 56 }) {
+function Avatar({ name, team, size = 56, ring }) {
   const color = teamColor(team);
   return (
     <div
       className="rounded-lg flex items-center justify-center font-black text-white flex-shrink-0 relative overflow-hidden"
-      style={{ width: size, height: size, background: `linear-gradient(160deg, ${color}, #0b1220)`, fontSize: size * 0.34 }}
+      style={{
+        width: size, height: size, background: `linear-gradient(160deg, ${color}, #0b1220)`, fontSize: size * 0.34,
+        boxShadow: ring ? `0 0 0 2px ${ring}` : undefined
+      }}
       title={name}
     >
       <div className="absolute inset-0 opacity-20" style={{
@@ -241,7 +261,7 @@ function Avatar({ name, team, size = 56 }) {
   );
 }
 
-/* ============ PERSISTED DELETE LIST ============ */
+/* ============ PERSISTED DELETE LIST (uses window.storage, not localStorage) ============ */
 function useDeletedPlayers(catKey) {
   const storageKey = `deleted:${catKey}`;
   const [deleted, setDeleted] = useState([]);
@@ -252,7 +272,7 @@ function useDeletedPlayers(catKey) {
     setLoaded(false);
     (async () => {
       try {
-        const res = await localStorage.getItem(storageKey);
+        const res = await window.storage.get(storageKey);
         if (!cancelled) setDeleted(res ? JSON.parse(res.value) : []);
       } catch {
         if (!cancelled) setDeleted([]);
@@ -266,11 +286,11 @@ function useDeletedPlayers(catKey) {
   async function removePlayer(name) {
     const next = [...new Set([...deleted, name])];
     setDeleted(next);
-    try { await localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
+    try { await window.storage.set(storageKey, JSON.stringify(next)); } catch {}
   }
   async function restoreAll() {
     setDeleted([]);
-    try { await localStorage.setItem(storageKey, JSON.stringify([])); } catch {}
+    try { await window.storage.set(storageKey, JSON.stringify([])); } catch {}
   }
 
   return { deleted, deletedSet: new Set(deleted), removePlayer, restoreAll, loaded };
@@ -297,15 +317,22 @@ function CatGrid({ active, onPick }) {
   );
 }
 
-/* ============ GAME FLOW ============ */
+/* ============ GAME FLOW ============
+   Each participant drafts a full 11-player lineup, one pick at a
+   time, in round-robin order. With N participants, total picks
+   = N × 11 (e.g. 2 participants → 22 picks). Afterwards every
+   participant's XI is shown, with add/remove controls.
+============================================================ */
 function PlayGame() {
   const [stage, setStage] = useState("count");
   const [numPlayers, setNumPlayers] = useState(null);
   const [algos, setAlgos] = useState([]);
-  const [turnIdx, setTurnIdx] = useState(0);
-  const [results, setResults] = useState([]);
+  const [lineups, setLineups] = useState([]);
+  const [turnIndex, setTurnIndex] = useState(0);
   const [category, setCategory] = useState(null);
   const [pickNum, setPickNum] = useState("");
+  const [lastPick, setLastPick] = useState(null);
+
   const deletedBatsman = useDeletedPlayers("batsman");
   const deletedAllrounder = useDeletedPlayers("allrounder");
   const deletedSpinner = useDeletedPlayers("spinner");
@@ -317,9 +344,14 @@ function PlayGame() {
     fastbowler: deletedFastbowler
   };
 
+  const totalTurns = numPlayers ? numPlayers * ROUNDS : 0;
+  const currentParticipant = numPlayers ? turnIndex % numPlayers : 0;
+  const currentRound = numPlayers ? Math.floor(turnIndex / numPlayers) + 1 : 1;
+
   function chooseCount(n) {
     setNumPlayers(n);
     setAlgos(Array(n).fill(""));
+    setLineups(Array(n).fill(null).map(() => []));
     setStage("algos");
   }
   function updateAlgo(i, val) {
@@ -328,35 +360,53 @@ function PlayGame() {
     setAlgos(next);
   }
   function startTurns() {
-    setTurnIdx(0);
+    setTurnIndex(0);
     setCategory(null);
     setPickNum("");
-    setResults([]);
+    setLastPick(null);
     setStage("turn");
   }
   function submitTurn() {
-    const algoNum = parseInt(algos[turnIdx], 10) || 0;
+    const algoNum = parseInt(algos[currentParticipant], 10) || 0;
     const pn = parseInt(pickNum, 10) || 0;
     const sum = algoNum + pn;
     if (!category || !pn) return;
+
     const ranked = rankOf(category, deletedByCat[category].deletedSet);
-    if (ranked.length === 0) return;
-    const idx = ((sum - 1) % ranked.length + ranked.length) % ranked.length;
-    const player = ranked[idx];
-    const result = { playerLabel: `Player ${turnIdx + 1}`, algo: algoNum, pickNum: pn, sum, category, player };
-    const nextResults = [...results, result];
-    setResults(nextResults);
-    if (turnIdx + 1 < numPlayers) {
-      setTurnIdx(turnIdx + 1);
+    const ownedNames = new Set(lineups[currentParticipant].map(p => p.name));
+    const available = ranked.filter(p => !ownedNames.has(p.name));
+    if (available.length === 0) return;
+
+    const idx = ((sum - 1) % available.length + available.length) % available.length;
+    const player = available[idx];
+    const entry = { ...player, category };
+
+    const nextLineups = lineups.map((arr, i) => (i === currentParticipant ? [...arr, entry] : arr));
+    setLineups(nextLineups);
+    setLastPick({ participantIdx: currentParticipant, round: currentRound, algo: algoNum, pickNum: pn, sum, category, player });
+
+    if (turnIndex + 1 >= totalTurns) {
+      setStage("done");
+    } else {
+      setTurnIndex(turnIndex + 1);
       setCategory(null);
       setPickNum("");
-    } else {
-      setStage("done");
     }
   }
   function resetAll() {
-    setStage("count"); setNumPlayers(null); setAlgos([]); setTurnIdx(0);
-    setResults([]); setCategory(null); setPickNum("");
+    setStage("count"); setNumPlayers(null); setAlgos([]); setLineups([]);
+    setTurnIndex(0); setCategory(null); setPickNum(""); setLastPick(null);
+  }
+  function removeFromLineup(participantIdx, name) {
+    setLineups(lineups.map((arr, i) => (i === participantIdx ? arr.filter(p => p.name !== name) : arr)));
+  }
+  function addToLineup(participantIdx, entry) {
+    setLineups(lineups.map((arr, i) => {
+      if (i !== participantIdx) return arr;
+      if (arr.length >= 11) return arr;
+      if (arr.some(p => p.name === entry.name)) return arr;
+      return [...arr, entry];
+    }));
   }
 
   return (
@@ -365,7 +415,10 @@ function PlayGame() {
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
           <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Step 1 of 3</div>
           <h2 className="text-xl font-extrabold text-white mb-1.5">How many are playing?</h2>
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">Pick a headcount — from 1 to 6 players. Each of you will get your own turn later.</p>
+          <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+            Pick a headcount — from 1 to 6 players. Each of you will draft a full playing XI, one pick per turn,
+            taking turns round-robin style. With 2 players that's 22 picks total (11 rounds × 2), with 3 it's 33, and so on.
+          </p>
           <div className="flex gap-2.5 flex-wrap">
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <button key={n} onClick={() => chooseCount(n)}
@@ -382,7 +435,7 @@ function PlayGame() {
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
           <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Step 2 of 3</div>
           <h2 className="text-xl font-extrabold text-white mb-1.5">Set each player's algorithm number</h2>
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">This is your personal number — it gets added to whatever number you pick during your turn.</p>
+          <p className="text-sm text-slate-400 mb-4 leading-relaxed">This is your personal number — it gets added to whatever number you pick during each of your 11 turns.</p>
           {algos.map((a, i) => (
             <div key={i} className="flex items-center gap-3.5 p-3.5 mb-2.5 bg-slate-900 border border-slate-700 rounded-lg">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-extrabold text-white flex-shrink-0">{i + 1}</div>
@@ -394,51 +447,106 @@ function PlayGame() {
           <div className="flex gap-2.5 mt-3">
             <button onClick={() => setStage("count")} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-4 py-2.5 rounded-lg">Back</button>
             <button disabled={algos.some((a) => a === "")} onClick={startTurns}
-              className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105">Start the game</button>
+              className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105">Start drafting</button>
           </div>
         </div>
       )}
 
       {stage === "turn" && (
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
-          <div className="inline-block font-mono text-xs bg-slate-900 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-full mb-3.5">Turn {turnIdx + 1} of {numPlayers}</div>
-          <h2 className="text-xl font-extrabold text-white mb-1.5">Player {turnIdx + 1}'s turn</h2>
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-            Your algorithm number is <b className="text-yellow-400">{algos[turnIdx]}</b>. Choose a category, then pick a number — the two get added together to reveal your player.
-          </p>
-          <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2 mt-1.5">Choose category</div>
-          <CatGrid active={category} onPick={setCategory} />
-          <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Pick a number</div>
-          <div className="flex items-center gap-3.5 p-3.5 mb-1 bg-slate-900 border border-slate-700 rounded-lg">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center font-extrabold text-white flex-shrink-0">#</div>
-            <label className="text-sm text-slate-400 flex-1">Your number (adds to algorithm {algos[turnIdx]})</label>
-            <input type="number" value={pickNum} min="1" onChange={(e) => setPickNum(e.target.value)} placeholder="e.g. 2"
-              className="w-20 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 font-mono text-base" />
+        <>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+            <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
+              <div className="inline-block font-mono text-xs bg-slate-900 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-full">
+                Round {currentRound} of {ROUNDS} · Pick {turnIndex + 1} of {totalTurns}
+              </div>
+              <div className="flex gap-1.5">
+                {lineups.map((arr, i) => (
+                  <div key={i} className={"font-mono text-[11px] px-2 py-1 rounded-full border " +
+                    (i === currentParticipant ? "border-yellow-400 text-yellow-400 bg-yellow-400/10" : "border-slate-700 text-slate-500")}>
+                    P{i + 1}: {arr.length}/11
+                  </div>
+                ))}
+              </div>
+            </div>
+            <h2 className="text-xl font-extrabold text-white mb-1.5">Player {currentParticipant + 1}'s pick</h2>
+            <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+              Your algorithm number is <b className="text-yellow-400">{algos[currentParticipant]}</b>. Choose a category, then pick a number — the two get added together to reveal your player.
+            </p>
+            <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2 mt-1.5">Choose category</div>
+            <CatGrid active={category} onPick={setCategory} />
+            <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-2">Pick a number</div>
+            <div className="flex items-center gap-3.5 p-3.5 mb-1 bg-slate-900 border border-slate-700 rounded-lg">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center font-extrabold text-white flex-shrink-0">#</div>
+              <label className="text-sm text-slate-400 flex-1">Your number (adds to algorithm {algos[currentParticipant]})</label>
+              <input type="number" value={pickNum} min="1" onChange={(e) => setPickNum(e.target.value)} placeholder="e.g. 2"
+                className="w-20 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 font-mono text-base" />
+            </div>
+            <div className="flex gap-2.5 mt-3.5">
+              <button onClick={resetAll} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-4 py-2.5 rounded-lg">Restart</button>
+              <button disabled={!category || !pickNum} onClick={submitTurn}
+                className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105">
+                Reveal pick {turnIndex + 1 < totalTurns ? "" : "(final)"}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2.5 mt-3.5">
-            <button onClick={resetAll} className="border border-slate-700 text-slate-400 hover:text-slate-100 hover:border-yellow-600 font-semibold text-sm px-4 py-2.5 rounded-lg">Restart</button>
-            <button disabled={!category || !pickNum} onClick={submitTurn}
-              className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105">
-              Reveal player {turnIdx + 1 < numPlayers ? "" : "(final)"}
-            </button>
-          </div>
-        </div>
-      )}
 
-      {(stage === "turn" || stage === "done") && results.length > 0 && (
-        <>{results.map((r, i) => <ResultCard key={i} r={r} />)}</>
+          {lastPick && <ResultCard r={lastPick} />}
+
+          <MiniLineups lineups={lineups} currentParticipant={currentParticipant} />
+        </>
       )}
 
       {stage === "done" && (
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
-          <h2 className="text-xl font-extrabold text-white mb-1.5">Match complete</h2>
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-            All {numPlayers} player{numPlayers > 1 ? "s" : ""} revealed. Head to the Head to Head tab to compare any two from the same category, or play again.
-          </p>
-          <button onClick={resetAll} className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg hover:brightness-105">Play again</button>
+        <div className="mb-5">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+            <h2 className="text-xl font-extrabold text-white mb-1.5">Draft complete — final lineups</h2>
+            <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+              Every participant's 11-player squad is below. Use ✕ to drop a player and "Add player" to fill the empty slot from anyone else in the database.
+            </p>
+            <button onClick={resetAll} className="bg-yellow-400 text-slate-950 font-bold text-sm px-5 py-3 rounded-lg hover:brightness-105">Draft again</button>
+          </div>
+          {lineups.map((arr, i) => (
+            <LineupPanel
+              key={i}
+              participantIdx={i}
+              lineup={arr}
+              onRemove={(name) => removeFromLineup(i, name)}
+              onAdd={(entry) => addToLineup(i, entry)}
+              deletedByCat={deletedByCat}
+              allLineups={lineups}
+            />
+          ))}
         </div>
       )}
     </>
+  );
+}
+
+function MiniLineups({ lineups, currentParticipant }) {
+  if (lineups.every(arr => arr.length === 0)) return null;
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+      <div className="font-mono text-xs tracking-widest uppercase text-yellow-400 mb-3">Squads so far</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {lineups.map((arr, i) => (
+          <div key={i} className={"rounded-lg border p-3 " + (i === currentParticipant ? "border-yellow-400" : "border-slate-700")}>
+            <div className="font-bold text-sm text-slate-100 mb-2">Player {i + 1} <span className="text-slate-500 font-mono text-xs">({arr.length}/11)</span></div>
+            {arr.length === 0 ? (
+              <div className="text-xs text-slate-500">No picks yet.</div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {arr.map((p) => (
+                  <div key={p.name} className="flex items-center gap-2 text-xs text-slate-300">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CAT_ACCENT[p.category] }}></span>
+                    <span className="truncate">{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -447,7 +555,7 @@ function ResultCard({ r }) {
   const meta = CATEGORY_META[r.category];
   return (
     <div className="rounded-2xl border-2 border-green-900 bg-gradient-to-b from-green-950 to-black p-5 text-center mb-4 relative overflow-hidden">
-      <div className="font-mono text-xs tracking-widest uppercase text-green-400 relative z-10">{r.playerLabel} · {meta.label} pick</div>
+      <div className="font-mono text-xs tracking-widest uppercase text-green-400 relative z-10">Player {r.participantIdx + 1} · Round {r.round} · {meta.label} pick</div>
       <div className="font-mono text-xs text-green-400/80 my-2 relative z-10">algorithm {r.algo} + number {r.pickNum} = {r.sum} → rank #{p.rank}</div>
       <div className="flex justify-center mb-2 relative z-10"><Avatar name={p.name} team={p.team} size={72} /></div>
       <div className="font-black text-3xl text-green-300 relative z-10" style={{ textShadow: "0 0 14px rgba(110,231,138,0.55)" }}>#{p.rank}</div>
@@ -467,6 +575,94 @@ function StatPill({ v, k }) {
     <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 min-w-[74px]">
       <div className="font-mono text-base text-white font-bold">{v}</div>
       <div className="text-[10px] text-green-400 uppercase tracking-wide mt-0.5">{k}</div>
+    </div>
+  );
+}
+
+/* ============ FINAL LINEUP PANEL (with add/remove) ============ */
+function LineupPanel({ participantIdx, lineup, onRemove, onAdd, deletedByCat, allLineups }) {
+  const [addingOpen, setAddingOpen] = useState(false);
+  const [addCat, setAddCat] = useState("batsman");
+  const [addName, setAddName] = useState("");
+
+  const ownedNames = new Set(lineup.map(p => p.name));
+  const candidates = useMemo(() => {
+    const ranked = rankOf(addCat, deletedByCat[addCat].deletedSet);
+    return ranked.filter(p => !ownedNames.has(p.name));
+    // eslint-disable-next-line
+  }, [addCat, lineup, deletedByCat]);
+
+  useEffect(() => {
+    if (candidates.length > 0 && !candidates.find(p => p.name === addName)) {
+      setAddName(candidates[0].name);
+    }
+    // eslint-disable-next-line
+  }, [addCat, candidates.length]);
+
+  function confirmAdd() {
+    const player = candidates.find(p => p.name === addName);
+    if (!player) return;
+    onAdd({ ...player, category: addCat });
+    setAddingOpen(false);
+  }
+
+  const full = lineup.length >= 11;
+
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+      <div className="flex items-center justify-between mb-3.5">
+        <h3 className="text-lg font-extrabold text-white">Player {participantIdx + 1}'s XI</h3>
+        <div className={"font-mono text-xs px-2.5 py-1 rounded-full border " + (full ? "border-green-600 text-green-400" : "border-yellow-600 text-yellow-400")}>
+          {lineup.length}/11
+        </div>
+      </div>
+
+      {lineup.length === 0 ? (
+        <div className="text-sm text-slate-400 mb-3">No players drafted.</div>
+      ) : (
+        <div className="flex flex-col gap-2 mb-3.5">
+          {lineup.map((p, idx) => (
+            <div key={p.name} className="flex items-center gap-3 p-2.5 bg-slate-900 border border-slate-700 rounded-lg group">
+              <div className="font-mono text-xs text-slate-500 w-5 text-center flex-shrink-0">{idx + 1}</div>
+              <Avatar name={p.name} team={p.team} size={36} ring={CAT_ACCENT[p.category]} />
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm text-slate-100 truncate">{p.name}</div>
+                <div className="text-[11px] text-slate-400 truncate">{p.team} · {CATEGORY_META[p.category].label}</div>
+              </div>
+              <button onClick={() => onRemove(p.name)} title="Remove from lineup"
+                className="text-slate-500 hover:text-red-400 text-sm font-bold w-7 h-7 rounded hover:bg-red-400/10 flex-shrink-0">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!full && (
+        addingOpen ? (
+          <div className="p-3.5 bg-slate-900 border border-slate-700 rounded-lg">
+            <div className="font-mono text-[11px] tracking-widest uppercase text-yellow-400 mb-2">Add a player</div>
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
+              <select value={addCat} onChange={(e) => setAddCat(e.target.value)}
+                className="p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-sm">
+                {CATEGORY_KEYS.map(k => <option key={k} value={k}>{CATEGORY_META[k].label}</option>)}
+              </select>
+              <select value={addName} onChange={(e) => setAddName(e.target.value)}
+                className="p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-sm">
+                {candidates.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setAddingOpen(false)} className="border border-slate-700 text-slate-400 hover:text-slate-100 font-semibold text-xs px-3.5 py-2 rounded-lg">Cancel</button>
+              <button disabled={candidates.length === 0} onClick={confirmAdd}
+                className="bg-yellow-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-105">Add to lineup</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setAddingOpen(true)}
+            className="w-full border border-dashed border-slate-600 text-slate-400 hover:text-yellow-400 hover:border-yellow-600 font-semibold text-sm py-2.5 rounded-lg">
+            + Add player
+          </button>
+        )
+      )}
     </div>
   );
 }
@@ -672,11 +868,11 @@ export default function App() {
           <p className="relative z-10 font-mono text-[11px] tracking-widest uppercase text-green-50/85 mb-2.5">Under the lights · Career stats 2010–2026</p>
           <h1 className="relative z-10 font-black text-4xl sm:text-5xl leading-none text-white mb-3" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.25)" }}>Number 11</h1>
           <p className="relative z-10 max-w-md text-white/90 text-[15px] leading-relaxed">
-            Pick your algorithm, call a category, and the scoreboard reveals your player — with a jersey card and career stats. Then settle the debates in Head to Head.
+            Pick your algorithm, call a category, and the scoreboard reveals your player. Draft your full XI — 11 picks each —
+            then fine-tune the final lineup with add and remove controls.
           </p>
           <div className="flex justify-end mt-4 relative z-10 font-sans text-[17px] text-slate-200/80 tracking-widest uppercase font-semibold">
-            
-          <p>Created By: NIRAV DHOLIYA</p>
+            <p>Created By: NIRAV DHOLIYA</p>
           </div>
         </div>
 
@@ -698,9 +894,12 @@ export default function App() {
           {BATSMEN.length} batsmen · {ALL_ROUNDERS.length} all-rounders · {SPINNERS.length} spinners · {FAST_BOWLERS.length} fast bowlers — every real player here has roughly 20+ IPL matches somewhere across 2010–2026.
           Spinner and fast-bowler pools are naturally smaller than batsmen, so those categories fall short of 100 rather than being padded with invented names.
           <br />
+          Each participant drafts a full 11-player lineup, one turn at a time, round-robin — not just a single reveal.
+          <br />
           Player cards use team-colored jersey avatars with initials, not photos — real player images aren't something I can pull in here.
           <br />
-          Removed players stay hidden across sessions in this portal; use "Restore removed" in Player Lists to bring them back. Stats are approximate career aggregates spanning many seasons — check iplt20.com/stats or espncricinfo.com for exact current numbers.
+          Removed players (Player Lists tab) stay hidden across sessions; use "Restore removed" to bring them back. Final lineups can be edited with add/remove controls, but those edits reset if you start a new draft.
+          Stats are approximate career aggregates spanning many seasons — check iplt20.com/stats or espncricinfo.com for exact current numbers.
         </div>
       </div>
     </div>
