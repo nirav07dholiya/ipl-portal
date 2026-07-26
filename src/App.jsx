@@ -66,7 +66,6 @@ const BATSMEN = [
   { name: "Karun Nair", team: "DD/KXIP/RCB", matches: 88, runs: 1667, avg: 27.3, sr: 124.4 },
   { name: "Devdutt Padikkal", team: "RCB/RR/LSG", matches: 90, runs: 2300, avg: 28.5, sr: 124.5 },
   { name: "Ruturaj Gaikwad", team: "CSK", matches: 110, runs: 3900, avg: 40.0, sr: 138.0 },
-  { name: "Priyank Panchal", team: "KXIP", matches: 32, runs: 400, avg: 15.0, sr: 105.0 },
   { name: "Manan Vohra", team: "KXIP/RCB", matches: 74, runs: 1673, avg: 24.2, sr: 124.9 },
   { name: "Aaron Finch", team: "PBKS/RCB/GL", matches: 89, runs: 2010, avg: 24.5, sr: 129.1 },
   { name: "Chris Gayle", team: "RCB/PBKS", matches: 142, runs: 4965, avg: 39.7, sr: 148.9 },
@@ -77,7 +76,6 @@ const BATSMEN = [
   { name: "Rahul Dravid", team: "RR/RCB", matches: 89, runs: 2174, avg: 28.2, sr: 116.1 },
   { name: "Mahela Jayawardene", team: "KXIP/DC", matches: 92, runs: 2438, avg: 30.9, sr: 119.8 },
   { name: "Kumar Sangakkara", team: "KXIP/DC", matches: 90, runs: 2265, avg: 33.3, sr: 121.9 },
-  { name: "Marlon Samuels", team: "KXIP/RR", matches: 63, runs: 1333, avg: 25.6, sr: 128.9 },
   { name: "Kevin Pietersen", team: "RCB/DC", matches: 43, runs: 1088, avg: 32.9, sr: 130.6 },
   { name: "Shubman Gill", team: "KKR/GT", matches: 140, runs: 5000, avg: 43.0, sr: 138.0 },
   { name: "Yashasvi Jaiswal", team: "RR", matches: 90, runs: 3300, avg: 37.0, sr: 156.0 },
@@ -95,7 +93,8 @@ const BATSMEN = [
   { name: "Devon Conway", team: "CSK", matches: 40, runs: 1350, avg: 38.0, sr: 135.5 },
   { name: "Travis Head", team: "SRH", matches: 40, runs: 1400, avg: 35.0, sr: 168.0 },
   { name: "Heinrich Klaasen", team: "SRH", matches: 65, runs: 1900, avg: 39.5, sr: 172.0 },
-  { name: "Vaibhav Suryavanshi", team: "RR", matches: 20, runs: 830, avg: 44.0, sr: 190.0 }
+  { name: "Vaibhav Suryavanshi", team: "RR", matches: 20, runs: 830, avg: 44.0, sr: 190.0 },
+     { name: "Manoj Tiwary", team: "KKR/RCB", matches: 98, runs: 1695, avg: 28.73, sr: 116.98 },
 ];
 
 const ALL_ROUNDERS = [
@@ -115,7 +114,6 @@ const ALL_ROUNDERS = [
   { name: "Ravichandran Ashwin", team: "CSK/KXIP/DC/RR", matches: 215, runs: 850, wickets: 182, econ: 6.9 },
   { name: "Marcus Stoinis", team: "RCB/DC/LSG", matches: 120, runs: 2500, wickets: 48, econ: 9.2 },
   { name: "James Faulkner", team: "PWI/RR/RCB", matches: 60, runs: 883, wickets: 54, econ: 8.1 },
-  { name: "Vinay Kumar", team: "RCB/KKR", matches: 104, runs: 300, wickets: 90, econ: 8.1 },
   { name: "Yuvraj Singh", team: "KXIP/PWI/RCB/DD/SRH", matches: 132, runs: 2750, wickets: 36, econ: 8.5 },
   { name: "Sunil Narine", team: "KKR", matches: 195, runs: 2100, wickets: 195, econ: 6.7 },
   { name: "Moeen Ali", team: "RCB/CSK", matches: 84, runs: 1500, wickets: 41, econ: 7.6 },
@@ -128,9 +126,7 @@ const ALL_ROUNDERS = [
   { name: "Rahul Tewatia", team: "RR/GT", matches: 100, runs: 1400, wickets: 26, econ: 8.9 },
   { name: "Shivam Dube", team: "RCB/CSK", matches: 95, runs: 2200, wickets: 12, econ: 9.5 },
   { name: "Daniel Christian", team: "DD/RCB/PBKS/SRH", matches: 76, runs: 900, wickets: 45, econ: 8.6 },
-  { name: "Manoj Tiwary", team: "KKR/RCB", matches: 121, runs: 2400, wickets: 3, econ: 9.0 },
   { name: "Riyan Parag", team: "RR", matches: 95, runs: 1700, wickets: 12, econ: 8.9 },
-  { name: "Venkatesh Iyer (AR)", team: "KKR", matches: 60, runs: 1600, wickets: 9, econ: 9.6 },
   { name: "Wanindu Hasaranga", team: "RCB/SRH", matches: 55, runs: 300, wickets: 72, econ: 7.6 },
   { name: "Marco Jansen", team: "SRH/MI", matches: 40, runs: 320, wickets: 40, econ: 9.2 },
   { name: "Liam Livingstone", team: "RR/PBKS", matches: 45, runs: 1050, wickets: 16, econ: 8.7 },
