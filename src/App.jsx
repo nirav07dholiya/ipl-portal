@@ -202,7 +202,7 @@ const FAST_BOWLERS = [
 ];
 
 const CATEGORY_META = {
-  batsman:    { label: "Batsman",     data: BATSMEN,      primary: "runs" },
+  batsman:    { label: "Batsman",     data: BATSMEN,      primary: "matches" },
   allrounder: { label: "All-rounder", data: ALL_ROUNDERS, primary: "combo" },
   spinner:    { label: "Spinner",     data: SPINNERS,     primary: "wickets" },
   fastbowler: { label: "Fast Bowler", data: FAST_BOWLERS, primary: "wickets" }
@@ -214,8 +214,8 @@ function rankOf(catKey, deletedSet) {
   const { data, primary } = CATEGORY_META[catKey];
   const active = data.filter(p => !deletedSet.has(p.name));
   let sorted;
-  if (primary === "runs") {
-    sorted = [...active].sort((a, b) => b.runs - a.runs);
+  if (primary === "matches") {
+    sorted = [...active].sort((a, b) => b.matches - a.matches);
   } else if (primary === "combo") {
     sorted = [...active].sort((a, b) => (b.runs + b.wickets * 20) - (a.runs + a.wickets * 20));
   } else {
