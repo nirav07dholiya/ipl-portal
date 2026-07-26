@@ -202,7 +202,7 @@ const FAST_BOWLERS = [
 ];
 
 const CATEGORY_META = {
-  batsman:    { label: "Batsman",     data: BATSMEN,      primary: "matches" },
+  batsman:    { label: "Batsman",     data: BATSMEN,      primary: "runs" },
   allrounder: { label: "All-rounder", data: ALL_ROUNDERS, primary: "combo" },
   spinner:    { label: "Spinner",     data: SPINNERS,     primary: "wickets" },
   fastbowler: { label: "Fast Bowler", data: FAST_BOWLERS, primary: "wickets" }
@@ -214,8 +214,8 @@ function rankOf(catKey, deletedSet) {
   const { data, primary } = CATEGORY_META[catKey];
   const active = data.filter(p => !deletedSet.has(p.name));
   let sorted;
-  if (primary === "matches") {
-    sorted = [...active].sort((a, b) => b.matches - a.matches);
+  if (primary === "runs") {
+    sorted = [...active].sort((a, b) => b.runs - a.runs);
   } else if (primary === "combo") {
     sorted = [...active].sort((a, b) => (b.runs + b.wickets * 20) - (a.runs + a.wickets * 20));
   } else {
@@ -663,7 +663,7 @@ function BrowseLists() {
     <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
       <h2 className="text-xl font-extrabold text-white mb-1.5">Player lists by category</h2>
       <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-        Ranked by {meta.primary === "matches" ? "career matches" : meta.primary === "combo" ? "combined batting + bowling impact" : "career wickets"}.
+        Ranked by {meta.primary === "runs" ? "career runs" : meta.primary === "combo" ? "combined batting + bowling impact" : "career wickets"}.
         Click the ✕ to remove a player from your list — it's remembered next time you open this portal.
       </p>
 
