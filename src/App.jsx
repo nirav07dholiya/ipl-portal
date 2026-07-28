@@ -1138,6 +1138,32 @@ function CompareTool() {
     setSearches(prev => prev.map((s, idx) => (idx === i ? val : s)));
   }
 
+  // Options visible in slot i's dropdown right now (matches its search text,
+  // excludes players already chosen in other slots). Shared by both the
+  // sync effect below and the render, so they can never disagree.
+  function filteredOptionsFor(i, selectedArr, searchesArr) {
+    const otherSelected = new Set(selectedArr.filter((_, idx) => idx !== i));
+    return ranked.filter(p =>
+      p.name.toLowerCase().includes((searchesArr[i] || "").toLowerCase()) && !otherSelected.has(p.name)
+    );
+  }
+
+  // FIX: typing a search that narrows the dropdown down to a match didn't
+  // actually update the selected player — the <select>'s displayed option
+  // and the real comparison state could disagree until an explicit click
+  // happened to register as a "change". This keeps them in sync: whenever
+  // search text changes, if the currently selected player no longer
+  // appears in that slot's narrowed options, immediately snap the
+  // selection to the top match instead.
+  useEffect(() => {
+    setSelected(prev => prev.map((name, i) => {
+      const options = filteredOptionsFor(i, prev, searches);
+      if (options.find(p => p.name === name)) return name;
+      return options[0] ? options[0].name : name;
+    }));
+    // eslint-disable-next-line
+  }, [searches, ranked]);
+
   const players = selected.map(name => ranked.find(p => p.name === name)).filter(Boolean);
   const allDistinct = new Set(selected.filter(Boolean)).size === selected.filter(Boolean).length;
   const rows = statRows(meta);
@@ -1190,10 +1216,7 @@ function CompareTool() {
 
           <div className="grid gap-2.5 mb-4" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))` }}>
             {Array.from({ length: numCompare }).map((_, i) => {
-              const otherSelected = new Set(selected.filter((_, idx) => idx !== i));
-              const options = ranked.filter(p =>
-                p.name.toLowerCase().includes((searches[i] || "").toLowerCase()) && !otherSelected.has(p.name)
-              );
+              const options = filteredOptionsFor(i, selected, searches);
               return (
                 <div key={i}>
                   <div className="text-[11px] text-slate-400 mb-1">Player {i + 1}</div>
