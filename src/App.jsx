@@ -1298,7 +1298,7 @@ export default function App() {
         <div className="relative rounded-2xl overflow-hidden mb-6 p-8 pb-7 border border-white/10" style={{ background: "linear-gradient(180deg, #2f7a4f 0%, #1f5a38 100%)" }}>
           <div className="absolute -top-14 -right-10 w-56 h-56 rounded-full opacity-70" style={{ background: "radial-gradient(circle, rgba(255,210,63,0.35), transparent 65%)", filter: "blur(2px)" }}></div>
           <p className="relative z-10 font-mono text-[11px] tracking-widest uppercase text-green-50/85 mb-2.5">Under the lights · Career stats 2010–2026</p>
-           <h3 className="relative z-10 font-black text-2xl sm:text-2xl leading-none text-white mb-3" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.25)" }}> Create Your Own</h3>
+           <h5 className="relative z-10 font-black text-1xl sm:text-.5xl leading-none text-gray-300 mb-3" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.25)" }}> Create Your Own</h5>
           <h1 className="relative z-10 font-black text-4xl sm:text-5xl leading-none text-white mb-3" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.25)" }}>Playing 11</h1>
           <p className="relative z-10 max-w-md text-white/90 text-[15px] leading-relaxed">
             Name yourself, pick your algorithm, call a category, and the scoreboard reveals your player. Draft your full XI, trade if you like,
