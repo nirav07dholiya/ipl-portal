@@ -112,7 +112,13 @@ const RAW_BATSMEN = [
   { name: "Travis Head", team: "SRH", matches: 40, runs: 1400, avg: 35.0, sr: 168.0 },
   { name: "Heinrich Klaasen", team: "SRH", matches: 65, runs: 1900, avg: 39.5, sr: 172.0 },
   { name: "Vaibhav Suryavanshi", team: "RR", matches: 20, runs: 830, avg: 44.0, sr: 190.0 },
-  { name: "Manoj Tiwary", team: "KKR/RCB", matches: 98, runs: 1695, avg: 28.73, sr: 116.98 }
+  { name: "Manoj Tiwary", team: "KKR/RCB", matches: 98, runs: 1695, avg: 28.73, sr: 116.98 },
+   { name: "Steve Smith", team: "PWI/RR/DC", matches: 114, runs: 2495, avg: 34.7, sr: 129.7 },
+   { name: "Shaun Marsh", team: "KXIP/CSK", matches: 115, runs: 3520, avg: 38.2, sr: 128.9 },
+{ name: "Matthew Hayden", team: "CSK", matches: 34, runs: 1107, avg: 38.2, sr: 143.3 },
+{ name: "Chris Lynn", team: "KKR/MI/SRH", matches: 88, runs: 2453, avg: 34.5, sr: 141.9 },
+{ name: "Rahul Tripathi", team: "RPS/KKR/SRH", matches: 105, runs: 2900, avg: 30.5, sr: 143.0 },
+{ name: "Eoin Morgan", team: "RCB/SRH/KKR", matches: 78, runs: 1331, avg: 24.6, sr: 129.5 },
 ];
 
 const RAW_ALL_ROUNDERS = [
@@ -152,7 +158,10 @@ const RAW_ALL_ROUNDERS = [
   { name: "Sam Curran", team: "PBKS/CSK", matches: 65, runs: 780, wickets: 60, econ: 8.9 },
   { name: "Romario Shepherd", team: "MI/LSG", matches: 35, runs: 320, wickets: 28, econ: 10.0 },
   { name: "Shardul Thakur", team: "RPS/CSK/DC/KKR", matches: 110, runs: 680, wickets: 92, econ: 9.2 },
-  { name: "Rachin Ravindra", team: "CSK", matches: 20, runs: 250, wickets: 10, econ: 7.9 }
+  { name: "Rachin Ravindra", team: "CSK", matches: 20, runs: 250, wickets: 10, econ: 7.9 },
+   { name: "Kedar Jadhav", team: "KXIP/SRH/CSK", matches: 96, runs: 1996, wickets: 27, econ: 8.6 },
+{ name: "JP Duminy", team: "MI/DD", matches: 87, runs: 1962, wickets: 26, econ: 7.5 },
+{ name: "Angelo Mathews", team: "DC/KXIP/SRH", matches: 47, runs: 750, wickets: 20, econ: 8.1 },
 ];
 
 const RAW_SPINNERS = [
@@ -174,7 +183,10 @@ const RAW_SPINNERS = [
   { name: "Adam Zampa", team: "RPS/PBKS", matches: 24, wickets: 22, econ: 8.2, bowlSR: 27.0 },
   { name: "Mujeeb Ur Rahman", team: "SRH/KXIP", matches: 40, wickets: 39, econ: 7.2, bowlSR: 23.0 },
   { name: "Noor Ahmad", team: "GT/CSK", matches: 45, wickets: 55, econ: 7.9, bowlSR: 18.0 },
-  { name: "Ravi Bishnoi", team: "LSG", matches: 95, wickets: 118, econ: 7.4, bowlSR: 20.0 }
+  { name: "Ravi Bishnoi", team: "LSG", matches: 95, wickets: 118, econ: 7.4, bowlSR: 20.0 },
+   { name: "Muttiah Muralitharan", team: "CSK/KXIP", matches: 63, wickets: 68, econ: 6.7, bowlSR: 20.0 },
+{ name: "Pravin Tambe", team: "RR", matches: 33, wickets: 34, econ: 7.0, bowlSR: 18.5 },
+{ name: "Mayank Markande", team: "MI/PBKS/RR", matches: 40, wickets: 42, econ: 8.2, bowlSR: 19.0 },
 ];
 
 const RAW_FAST_BOWLERS = [
@@ -215,7 +227,10 @@ const RAW_FAST_BOWLERS = [
   { name: "Yash Dayal", team: "GT/RCB", matches: 35, wickets: 36, econ: 9.3, bowlSR: 19.5 },
   { name: "Reece Topley", team: "MI", matches: 22, wickets: 22, econ: 8.5, bowlSR: 24.1 },
   { name: "Josh Hazlewood", team: "CSK/RCB", matches: 33, wickets: 46, econ: 8.1, bowlSR: 19.0 },
-  { name: "Nathan Ellis", team: "PBKS/CSK", matches: 25, wickets: 30, econ: 8.9, bowlSR: 18.0 }
+  { name: "Nathan Ellis", team: "PBKS/CSK", matches: 25, wickets: 30, econ: 8.9, bowlSR: 18.0 },
+   { name: "S Sreesanth", team: "KXIP/KKR", matches: 65, wickets: 62, econ: 8.0, bowlSR: 20.0 },
+{ name: "Dhawal Kulkarni", team: "MI/RR/GL", matches: 79, wickets: 72, econ: 7.9, bowlSR: 20.5 },
+{ name: "Umran Malik", team: "SRH", matches: 32, wickets: 40, econ: 9.0, bowlSR: 17.5 },
 ];
 
 // Attach the new derived stats once, so every reference (ranked lists,
