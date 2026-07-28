@@ -309,36 +309,40 @@ function Avatar({ name, team, size = 56, ring }) {
   );
 }
 
-/* ============ PERSISTED DELETE LIST (uses window.storage, not localStorage) ============ */
+/* ============ PERSISTED DELETE LIST (uses browser localStorage) ============
+   Note: this app is deployed as a standalone site (Vercel), not inside a
+   Claude.ai artifact — so it uses real localStorage here instead of the
+   Claude-artifact-only window.storage API, which doesn't exist outside
+   Claude.ai and would throw at runtime. */
 function useDeletedPlayers(catKey) {
   const storageKey = `deleted:${catKey}`;
   const [deleted, setDeleted] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
     setLoaded(false);
-    (async () => {
-      try {
-        const res = await window.storage.get(storageKey);
-        if (!cancelled) setDeleted(res ? JSON.parse(res.value) : []);
-      } catch {
-        if (!cancelled) setDeleted([]);
-      } finally {
-        if (!cancelled) setLoaded(true);
-      }
-    })();
-    return () => { cancelled = true; };
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(storageKey) : null;
+      setDeleted(raw ? JSON.parse(raw) : []);
+    } catch {
+      setDeleted([]);
+    } finally {
+      setLoaded(true);
+    }
   }, [storageKey]);
 
-  async function removePlayer(name) {
+  function removePlayer(name) {
     const next = [...new Set([...deleted, name])];
     setDeleted(next);
-    try { await window.storage.set(storageKey, JSON.stringify(next)); } catch {}
+    try {
+      if (typeof window !== "undefined") window.localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {}
   }
-  async function restoreAll() {
+  function restoreAll() {
     setDeleted([]);
-    try { await window.storage.set(storageKey, JSON.stringify([])); } catch {}
+    try {
+      if (typeof window !== "undefined") window.localStorage.setItem(storageKey, JSON.stringify([]));
+    } catch {}
   }
 
   return { deleted, deletedSet: new Set(deleted), removePlayer, restoreAll, loaded };
