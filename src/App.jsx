@@ -119,6 +119,9 @@ const RAW_BATSMEN = [
 { name: "Chris Lynn", team: "KKR/MI/SRH", matches: 88, runs: 2453, avg: 34.5, sr: 141.9 },
 { name: "Rahul Tripathi", team: "RPS/KKR/SRH", matches: 105, runs: 2900, avg: 30.5, sr: 143.0 },
 { name: "Eoin Morgan", team: "RCB/SRH/KKR", matches: 78, runs: 1331, avg: 24.6, sr: 129.5 },
+   { name: "Sourav Ganguly", team: "KKR/PWI", matches: 59, runs: 1349, avg: 26.4, sr: 116.5 },
+   { name: "Ricky Ponting", team: "KKR/MI", matches: 29, runs: 597, avg: 26.0, sr: 105.0 },
+   { name: "Jonny Bairstow", team: "SRH/PBKS", matches: 40, runs: 1250, avg: 33.0, sr: 145.0 },
 ];
 
 const RAW_ALL_ROUNDERS = [
@@ -187,6 +190,7 @@ const RAW_SPINNERS = [
    { name: "Muttiah Muralitharan", team: "CSK/KXIP", matches: 63, wickets: 68, econ: 6.7, bowlSR: 20.0 },
 { name: "Pravin Tambe", team: "RR", matches: 33, wickets: 34, econ: 7.0, bowlSR: 18.5 },
 { name: "Mayank Markande", team: "MI/PBKS/RR", matches: 40, wickets: 42, econ: 8.2, bowlSR: 19.0 },
+   { name: "Shane Warne", team: "RR", matches: 55, wickets: 57, econ: 7.0, bowlSR: 20.0 },
 ];
 
 const RAW_FAST_BOWLERS = [
@@ -231,6 +235,8 @@ const RAW_FAST_BOWLERS = [
    { name: "S Sreesanth", team: "KXIP/KKR", matches: 65, wickets: 62, econ: 8.0, bowlSR: 20.0 },
 { name: "Dhawal Kulkarni", team: "MI/RR/GL", matches: 79, wickets: 72, econ: 7.9, bowlSR: 20.5 },
 { name: "Umran Malik", team: "SRH", matches: 32, wickets: 40, econ: 9.0, bowlSR: 17.5 },
+   { name: "Brett Lee", team: "KKR/PWI/SRH", matches: 76, wickets: 76, econ: 7.4, bowlSR: 20.0 },
+   { name: "David Willey", team: "CSK/KXIP", matches: 12, wickets: 15, econ: 8.4, bowlSR: 18.0 }
 ];
 
 // Attach the new derived stats once, so every reference (ranked lists,
